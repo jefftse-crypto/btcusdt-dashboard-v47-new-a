@@ -1,0 +1,689 @@
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useKlineWebSocket } from "@/hooks/useKlineWebSocket";
+import { WidgetManager } from "@/components/WidgetManager";
+
+// 懶加載所有面板元件，減少首屏 bundle 大小
+const IndicatorsPanel   = lazy(() => import("@/components/panels/IndicatorsPanel").then(m => ({ default: m.IndicatorsPanel })));
+const SmcPanel          = lazy(() => import("@/components/panels/SmcPanel").then(m => ({ default: m.SmcPanel })));
+const PaPanel           = lazy(() => import("@/components/panels/PaPanel").then(m => ({ default: m.PaPanel })));
+const ChanPanel         = lazy(() => import("@/components/panels/ChanPanel").then(m => ({ default: m.ChanPanel })));
+const StrategyPanel     = lazy(() => import("@/components/panels/StrategyPanel").then(m => ({ default: m.StrategyPanel })));
+const ForecastPanel     = lazy(() => import("@/components/panels/ForecastPanel").then(m => ({ default: m.ForecastPanel })));
+const OnchainPanel      = lazy(() => import("@/components/panels/OnchainPanel").then(m => ({ default: m.OnchainPanel })));
+const NewsPanel         = lazy(() => import("@/components/panels/NewsPanel").then(m => ({ default: m.NewsPanel })));
+const TweetPanel        = lazy(() => import("@/components/panels/TweetPanel").then(m => ({ default: m.TweetPanel })));
+const BacktestPanel     = lazy(() => import("@/components/panels/BacktestPanel").then(m => ({ default: m.BacktestPanel })));
+const HighWinRatePanel  = lazy(() => import("@/components/panels/HighWinRatePanel"));
+const KlinePanel        = lazy(() => import("@/components/panels/KlinePanel").then(m => ({ default: m.KlinePanel })));
+const ScreenerPanel     = lazy(() => import("@/components/panels/ScreenerPanel"));
+const HeatmapPanel      = lazy(() => import("@/components/panels/HeatmapPanel"));
+const AlertsPanel       = lazy(() => import("@/components/panels/AlertsPanel"));
+const VolumeProfilePanel = lazy(() => import("@/components/panels/VolumeProfilePanel"));
+const DivergencePanel   = lazy(() => import("@/components/panels/DivergencePanel").then(m => ({ default: m.DivergencePanel })));
+const PaLevelPanel      = lazy(() => import("@/components/panels/PaLevelPanel").then(m => ({ default: m.PaLevelPanel })));
+const ChanEnhancedPanel = lazy(() => import("@/components/panels/ChanEnhancedPanel").then(m => ({ default: m.ChanEnhancedPanel })));
+const SmcUltimatePanel  = lazy(() => import("@/components/panels/SmcUltimatePanel").then(m => ({ default: m.SmcUltimatePanel })));
+import { toast } from "sonner";
+import {
+  RefreshCw, Wifi, WifiOff, Star, Settings,
+  TrendingUp, TrendingDown, Minus, Zap,
+} from "lucide-react";
+import {
+  SUPPORTED_SYMBOLS,
+  DEFAULT_WIDGET_IDS,
+  type Timeframe,
+  type CryptoSnapshot,
+} from "@shared/cryptoTypes";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: "screener",    label: "🔍 篩選器" },
+  { id: "heatmap",     label: "🌡️ 熱力圖" },
+  { id: "vpvr",        label: "📊成交量分佈" },
+  { id: "indicators",  label: "📈 技術指標" },
+  { id: "smc",         label: "🎯 SMC 結構" },
+  { id: "smc_ultimate", label: "🎯 SMC 終極確認" },
+  { id: "pa",          label: "📊 PA 分析" },
+  { id: "pa_level",    label: "📊 PA 水位共振" },
+  { id: "divergence",  label: "📉 背離偵測" },
+  { id: "chan",         label: "🌀 纏論分析" },
+  { id: "chan_enhanced", label: "🌀 纏論強化版" },
+  { id: "onchain",     label: "⛓️ 鏈上數據" },
+  { id: "strategy",    label: "💡 策略建議" },
+  { id: "forecast",    label: "🔮 預測情境" },
+  { id: "highwinrate", label: "🏆 高勝率策略" },
+  { id: "history",     label: "📜 回測記錄" },
+  { id: "alerts",      label: "🔔 警報" },
+  { id: "news",        label: "📰 最新資訊" },
+  { id: "settings",    label: "⚙️ 設定" },
+];
+
+const EMA_PERIODS = [9, 20, 50, 100, 200];
+
+function formatPrice(price: number): string {
+  if (price >= 10000) return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (price >= 100)   return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  return price.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Consensus helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getConsensusLabel(score: number | null): { label: string; color: string } {
+  if (score === null) return { label: "—", color: "text-[#888]" };
+  if (score >= 70) return { label: "強烈看多", color: "text-[#00e676]" };
+  if (score >= 55) return { label: "看多", color: "text-[#4caf50]" };
+  if (score >= 45) return { label: "分歧（無明確共識）", color: "text-[#ffd740]" };
+  if (score >= 30) return { label: "看空", color: "text-[#ef5350]" };
+  return { label: "強烈看空", color: "text-[#f44336]" };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function Dashboard() {
+  const { user } = useAuth();
+
+  const [symbol, setSymbol]           = useState("BTCUSDT");
+  const [activeTab, setActiveTab]     = useState("indicators");
+  const [newsSubTab, setNewsSubTab]   = useState<"news" | "tweets">("news");
+  const [activeEmas, setActiveEmas]   = useState<number[]>([20, 50]);
+  const [showWidgetMgr, setShowWidgetMgr] = useState(false);
+  const [widgetIds, setWidgetIds]     = useState<string[]>(DEFAULT_WIDGET_IDS);
+  const [snapshot, setSnapshot]       = useState<CryptoSnapshot | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [watchlist, setWatchlist]     = useState<string[]>([]);
+
+  const { livePrice, change24h, isLive } = useKlineWebSocket({
+    symbol,
+    timeframe: "1h",
+    enabled: true,
+    mode: "ticker",
+  });
+
+  // Widget prefs
+  const widgetPrefsQuery = trpc.widgets.getPrefs.useQuery(
+    { openId: user?.openId ?? undefined },
+    { enabled: !!user?.openId }
+  );
+  const saveWidgetPrefsMutation = trpc.widgets.savePrefs.useMutation();
+
+  useEffect(() => {
+    if (widgetPrefsQuery.data) setWidgetIds(widgetPrefsQuery.data);
+  }, [widgetPrefsQuery.data]);
+
+  // tRPC utils for direct query calls
+  const utils = trpc.useUtils();
+
+  // G: 幣種切換後自動觸發分析
+  useEffect(() => {
+    if (snapshot) {
+      // 幣種已有快照時，切換幣種後自動重新分析
+      handleAnalyze();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol]);
+
+  // Trigger analysis — 直接呼叫 getSnapshot（同步等待結果，不再 polling）
+  const handleAnalyze = useCallback(async () => {
+    setIsAnalyzing(true);
+    toast.info(`正在分析 ${symbol}，請稍候...`);
+    try {
+      // 直接強制重新抓取（不先 invalidate 避免競態條件）
+      const result = await utils.crypto.getSnapshot.fetch({ symbol }, { staleTime: 0 });
+      if (result) {
+        setSnapshot(result as CryptoSnapshot);
+        setLastUpdated(new Date());
+        toast.success("分析完成！");
+      } else {
+        toast.error("分析返回空結果，請重試");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`分析失敗：${msg}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [symbol, utils]);
+
+  const handleWidgetSave = (ids: string[]) => {
+    setWidgetIds(ids);
+    if (user?.openId) saveWidgetPrefsMutation.mutate({ openId: user.openId, widgetIds: ids });
+  };
+
+  const toggleWatchlist = () => {
+    setWatchlist(prev =>
+      prev.includes(symbol) ? prev.filter(s => s !== symbol) : [...prev, symbol]
+    );
+  };
+
+  const toggleEma = (period: number) => {
+    setActiveEmas(prev =>
+      prev.includes(period) ? prev.filter(p => p !== period) : [...prev, period]
+    );
+  };
+
+  // Derived
+  const displayPrice = livePrice ?? snapshot?.live_price ?? null;
+  const symbolInfo = SUPPORTED_SYMBOLS.find(s => s.value === symbol);
+  const symbolBase = symbol.replace("USDT", "");
+
+  const consensus = snapshot?.consensus;
+  const consensusScore = consensus?.score ?? null;
+  const { label: consensusLabel, color: consensusColor } = getConsensusLabel(consensusScore);
+
+  const direction = snapshot?.strategy?.direction ?? null;
+
+  // Direction probability (mock from consensus score)
+  const bullPct = consensusScore !== null ? Math.max(5, Math.min(90, consensusScore)) : null;
+  const bearPct = bullPct !== null ? Math.max(5, Math.min(85, 100 - bullPct - 10)) : null;
+  const sidePct = (bullPct !== null && bearPct !== null) ? Math.max(5, 100 - bullPct - bearPct) : null;
+
+  const chanData = useMemo(() => {
+    const pa = snapshot?.pa;
+    if (!pa) return undefined;
+    const tfData = pa.timeframes["4h"];
+    if (!tfData) return undefined;
+    return (tfData as { chan?: unknown }).chan as import("@shared/cryptoTypes").ChanData | undefined;
+  }, [snapshot]);
+  const chanMtfData = useMemo(() => {
+    return snapshot?.chan_mtf as import("@shared/cryptoTypes").ChanMtfData | undefined;
+  }, [snapshot]);
+
+  const isWatchlisted = watchlist.includes(symbol);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a", color: "#e0e0e0" }}>
+
+      {/* ══ TOP NAV ══ */}
+      <header className="sticky top-0 z-40 border-b" style={{ background: "#111", borderColor: "#1e1e1e" }}>
+        <div className="flex items-center gap-3 px-4 py-2">
+
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0 mr-1">
+            <Zap className="w-4 h-4 text-[#ffd740]" />
+            <span className="text-sm font-bold tracking-wide text-[#ffd740] hidden sm:block">CRYPTO ANALYST</span>
+          </div>
+
+          {/* Symbol Selector */}
+          <div className="flex items-center gap-1">
+            <select
+              value={symbol}
+              onChange={e => { setSymbol(e.target.value); setSnapshot(null); }}
+              className="text-sm font-semibold bg-[#1a1a1a] border border-[#2a2a2a] rounded px-3 py-1 text-white focus:outline-none focus:border-[#ffd740] cursor-pointer"
+            >
+              {SUPPORTED_SYMBOLS.map(s => (
+                <option key={s.value} value={s.value}>{s.value}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Live Price */}
+          {displayPrice && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-mono font-bold text-white">
+                ${formatPrice(displayPrice)}
+              </span>
+              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-[#4caf50] animate-pulse" />}
+              {change24h !== null && (
+                <span className={`text-xs font-mono ${change24h >= 0 ? "text-[#4caf50]" : "text-[#ef5350]"}`}>
+                  {change24h >= 0 ? "+" : ""}{change24h.toFixed(2)}%
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Consensus */}
+          {consensusScore !== null && (
+            <div className="hidden md:flex items-center gap-1.5">
+              <span className={`text-xs font-medium ${consensusColor}`}>{consensusLabel}</span>
+              <span className={`text-xs font-mono font-bold ${consensusColor}`}>{consensusScore.toFixed(1)}</span>
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* WS indicator */}
+          {isLive
+            ? <Wifi className="w-3.5 h-3.5 text-[#4caf50]" />
+            : <WifiOff className="w-3.5 h-3.5 text-[#555]" />
+          }
+
+          {/* Watchlist */}
+          <button
+            onClick={toggleWatchlist}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs border transition-colors ${
+              isWatchlisted
+                ? "border-[#ffd740] text-[#ffd740] bg-[#ffd740]/10"
+                : "border-[#2a2a2a] text-[#888] hover:border-[#444] hover:text-[#ccc]"
+            }`}
+          >
+            <Star className="w-3 h-3" />
+            自選
+          </button>
+
+          {/* Analyze Button */}
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-semibold transition-colors disabled:opacity-60"
+            style={{ background: "#f57c00", color: "#fff" }}
+          >
+            {isAnalyzing
+              ? <><RefreshCw className="w-3 h-3 animate-spin" />分析中</>
+              : <><RefreshCw className="w-3 h-3" />分析 {symbolBase}</>
+            }
+          </button>
+        </div>
+      </header>
+
+      {/* ══ OVERVIEW BANNER ══ */}
+      <div className="border-b px-4 py-3" style={{ background: "#0f0f0f", borderColor: "#1e1e1e" }}>
+        {/* Title row */}
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <div className="text-xs text-[#888] mb-0.5">{symbolBase} 即時技術概覽</div>
+            {displayPrice ? (
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold font-mono text-white">${formatPrice(displayPrice)}</span>
+                {consensusScore !== null && (
+                  <span className={`text-sm font-medium px-2 py-0.5 rounded border ${
+                    consensusScore >= 55 ? "border-[#4caf50]/40 text-[#4caf50] bg-[#4caf50]/10"
+                    : consensusScore <= 45 ? "border-[#ef5350]/40 text-[#ef5350] bg-[#ef5350]/10"
+                    : "border-[#ffd740]/40 text-[#ffd740] bg-[#ffd740]/10"
+                  }`}>
+                    {consensusLabel}
+                  </span>
+                )}
+                {consensusScore !== null && (
+                  <span className="text-sm text-[#888]">綜合評分 <span className={`font-bold ${consensusColor}`}>{consensusScore.toFixed(2)}</span></span>
+                )}
+              </div>
+            ) : (
+              <div className="text-lg font-mono text-[#555]">—</div>
+            )}
+            {lastUpdated && (
+              <div className="text-[11px] text-[#555] mt-1">
+                {Math.floor((Date.now() - lastUpdated.getTime()) / 60000)} 分鐘前 · 更新 {lastUpdated.toLocaleTimeString("zh-TW")}
+              </div>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-[#888]">主要情境</div>
+            <div className={`text-sm font-semibold ${
+              direction === "long" ? "text-[#4caf50]"
+              : direction === "short" ? "text-[#ef5350]"
+              : "text-[#ffd740]"
+            }`}>
+              {direction === "long" ? "看多" : direction === "short" ? "看空" : "震盪"}
+            </div>
+          </div>
+        </div>
+
+        {/* Overview text */}
+        {(snapshot?.consensus as unknown as { summary?: string })?.summary && (
+          <div className="text-xs text-[#aaa] mb-3 leading-relaxed">{(snapshot?.consensus as unknown as { summary: string })?.summary}</div>
+        )}
+        {!snapshot && (
+          <div className="text-xs text-[#555] mb-3">請先執行分析以取得市場概覽。</div>
+        )}
+
+        {/* Direction probability bar */}
+        {bullPct !== null && bearPct !== null && sidePct !== null && (
+          <div className="mb-3">
+            <div className="text-[10px] text-[#555] mb-1">方向機率</div>
+            <div className="flex rounded overflow-hidden h-2">
+              <div style={{ width: `${bullPct}%`, background: "#4caf50" }} />
+              <div style={{ width: `${sidePct}%`, background: "#ffd740" }} />
+              <div style={{ width: `${bearPct}%`, background: "#ef5350" }} />
+            </div>
+            <div className="flex justify-between mt-1 text-[10px]">
+              <span className="text-[#4caf50]">看多 {bullPct.toFixed(1)}%</span>
+              <span className="text-[#ffd740]">震盪 {sidePct.toFixed(1)}%</span>
+              <span className="text-[#ef5350]">看空 {bearPct.toFixed(1)}%</span>
+            </div>
+          </div>
+        )}
+
+        {/* Scenario cards */}
+        {snapshot && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded p-2.5" style={{ background: "#161616", border: "1px solid #2a2a2a" }}>
+              <div className="text-[10px] text-[#ffd740] font-semibold mb-1.5">震盪觀察</div>
+              <div className="space-y-1 text-[11px] text-[#aaa]">
+                <div>· 多週期訊號分歧，市場處於震盪整理</div>
+                <div>· 等待方向突破後再確認入場</div>
+                <div>· 留意成交量配合情況</div>
+              </div>
+            </div>
+            <div className="rounded p-2.5" style={{ background: "#161616", border: "1px solid #2a2a2a" }}>
+              <div className="text-[10px] text-[#3b82f6] font-semibold mb-1.5">區間策略</div>
+              <div className="space-y-1 text-[11px] text-[#aaa]">
+                <div>· 區間上緣附近留意做空機會</div>
+                <div>· 區間下緣附近留意做多機會</div>
+                <div>· 突破方向確認後順勢跟進</div>
+              </div>
+            </div>
+            <div className="rounded p-2.5" style={{ background: "#161616", border: "1px solid #2a2a2a" }}>
+              <div className="text-[10px] text-[#ef5350] font-semibold mb-1.5">風險提示</div>
+              <div className="space-y-1 text-[11px] text-[#aaa]">
+                <div>· 若成交量異常放大需特別留意</div>
+                <div>· 突破前高或前低後確認方向</div>
+                <div>· 避免在區間中部追漲殺跌</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ══ INDICATOR CARDS ══ */}
+      <div className="flex items-stretch gap-0 border-b overflow-x-auto" style={{ background: "#0f0f0f", borderColor: "#1e1e1e" }}>
+        {/* Current Price */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5 border-r" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <TrendingUp className="w-3 h-3" />
+            當前價格
+          </div>
+          <div className="text-sm font-mono font-bold text-white">
+            {displayPrice ? `$${formatPrice(displayPrice)}` : "—"}
+          </div>
+          {lastUpdated && <div className="text-[10px] text-[#555] mt-0.5">更新 {lastUpdated.toLocaleTimeString("zh-TW")}</div>}
+        </div>
+
+        {/* Consensus */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5 border-r" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <Minus className="w-3 h-3" />
+            多週期共識
+          </div>
+          <div className={`text-sm font-semibold ${consensusColor}`}>{consensusLabel}</div>
+          {consensusScore !== null && <div className="text-[10px] text-[#555] mt-0.5">評分 {consensusScore.toFixed(2)}</div>}
+        </div>
+
+        {/* 4H Forecast */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5 border-r" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <TrendingUp className="w-3 h-3" />
+            4H 預測
+          </div>
+          <div className="text-sm font-semibold text-[#888]">
+            {snapshot?.forecast_4h?.main_scenario ?? "無明確共識"}
+          </div>
+          {bullPct !== null && (
+            <div className="text-[10px] text-[#555] mt-0.5">
+              多 {bullPct.toFixed(1)}% / 空 {bearPct?.toFixed(1)}% / 盤 {sidePct?.toFixed(1)}%
+            </div>
+          )}
+        </div>
+
+        {/* Funding Rate */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5 border-r" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <Minus className="w-3 h-3" />
+            資金費率
+          </div>
+          <div className={`text-sm font-mono font-bold ${
+            ((snapshot?.onchain?.funding_rate as { rate: number } | null)?.rate ?? 0) > 0 ? "text-[#ef5350]" : "text-[#4caf50]"
+          }`}>
+            {snapshot?.onchain?.funding_rate != null
+              ? `${((snapshot.onchain.funding_rate as { rate: number }).rate * 100).toFixed(4)}%`
+              : "—"
+            }
+          </div>
+          <div className="text-[10px] text-[#555] mt-0.5">永續合約</div>
+        </div>
+
+        {/* Long/Short Ratio */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5 border-r" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <TrendingDown className="w-3 h-3" />
+            多空比
+          </div>
+          <div className="text-sm font-mono font-bold text-white">
+            {snapshot?.onchain?.long_short_ratio != null
+              ? (snapshot.onchain.long_short_ratio as { ls_ratio: number }).ls_ratio.toFixed(3)
+              : "—"
+            }
+          </div>
+          <div className="text-[10px] text-[#555] mt-0.5">散戶多空比</div>
+        </div>
+
+        {/* ATR */}
+        <div className="flex-1 min-w-[120px] px-4 py-2.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-[#888] mb-1">
+            <TrendingUp className="w-3 h-3" />
+            4H ATR
+          </div>
+          <div className="text-sm font-mono font-bold text-white">
+            {snapshot?.indicators?.atr?.toFixed(2) ?? "—"}
+          </div>
+          <div className="text-[10px] text-[#555] mt-0.5">ADX {snapshot?.indicators?.adx != null ? (snapshot.indicators.adx as unknown as { adx: number }).adx?.toFixed(1) ?? (snapshot.indicators.adx as unknown as number)?.toFixed?.(1) ?? "—" : "—"}</div>
+        </div>
+
+        {/* Widget Manager button */}
+        <div className="px-3 py-2.5 flex items-center">
+          <button
+            onClick={() => setShowWidgetMgr(true)}
+            className="flex flex-col items-center gap-1 text-[#555] hover:text-[#888] transition-colors"
+            title="管理指標卡片"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span className="text-[10px]">管理</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ══ KLINE SECTION ══ */}
+      <div className="border-b" style={{ background: "#0a0a0a", borderColor: "#1e1e1e" }}>
+        {/* Section header + EMA controls */}
+        <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "#1e1e1e" }}>
+          <div className="flex items-center gap-2 text-xs text-[#888]">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span className="font-medium text-[#ccc]">多時間框架 K 線圖</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-[#555]">均線：</span>
+            {EMA_PERIODS.map(p => (
+              <button
+                key={p}
+                onClick={() => toggleEma(p)}
+                className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                  activeEmas.includes(p)
+                    ? "border-[#3b82f6] text-[#3b82f6] bg-[#3b82f6]/10"
+                    : "border-[#2a2a2a] text-[#555] hover:border-[#444]"
+                }`}
+              >
+                EMA{p}
+              </button>
+            ))}
+            <button
+              onClick={() => setActiveEmas([])}
+              className="text-[10px] px-2 py-0.5 rounded border border-[#2a2a2a] text-[#555] hover:border-[#444] hover:text-[#888] transition-colors"
+            >
+              清除
+            </button>
+          </div>
+        </div>
+
+        {/* 2×2 K-line grid */}
+        <Suspense fallback={
+          <div className="grid grid-cols-2 gap-px" style={{ background: "#1e1e1e" }}>
+            {[0,1,2,3].map(i => (
+              <div key={i} className="animate-pulse" style={{ height: 260, background: "#111" }}>
+                <div className="h-6 w-24 m-3 rounded" style={{ background: "#1e1e1e" }} />
+                <div className="mx-3 rounded" style={{ height: 200, background: "#161616" }} />
+              </div>
+            ))}
+          </div>
+        }>
+          <div className="grid grid-cols-2 gap-px" style={{ background: "#1e1e1e" }}>
+            <KlinePanel symbol={symbol} timeframe="4h"  livePrice={livePrice} activeEmas={activeEmas} height={260} />
+            <KlinePanel symbol={symbol} timeframe="1h"  livePrice={livePrice} activeEmas={activeEmas} height={260} />
+            <KlinePanel symbol={symbol} timeframe="15m" livePrice={livePrice} activeEmas={activeEmas} height={260} />
+            <KlinePanel symbol={symbol} timeframe="5m"  livePrice={livePrice} activeEmas={activeEmas} height={260} />
+          </div>
+        </Suspense>
+      </div>
+
+      {/* ══ ANALYSIS TABS ══ */}
+      <div className="flex-1" style={{ background: "#0a0a0a" }}>
+        {/* Tab bar */}
+        <div className="flex items-center gap-0 border-b overflow-x-auto" style={{ borderColor: "#1e1e1e", background: "#0f0f0f" }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-xs whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? "border-[#f57c00] text-[#f57c00] bg-[#f57c00]/5"
+                  : "border-transparent text-[#666] hover:text-[#aaa] hover:bg-[#161616]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="p-4">
+          {/* Empty state */}
+          {!snapshot && !isAnalyzing && activeTab !== "news" && activeTab !== "settings" && activeTab !== "history" && activeTab !== "highwinrate" && activeTab !== "screener" && activeTab !== "heatmap" && activeTab !== "alerts" && activeTab !== "vpvr" && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-4" style={{ background: "#161616" }}>
+                <span className="text-2xl">{symbolInfo?.icon ?? "₿"}</span>
+              </div>
+              <div className="text-base font-semibold text-[#ccc] mb-2">
+                {symbolInfo?.label ?? symbol} 技術分析儀表板
+              </div>
+              <div className="text-sm text-[#555] mb-6 max-w-md leading-relaxed">
+                點擊右上角「分析」按鈕，觸發 AI 技術分析引擎，取得完整的 SMC、PA、纏論、鏈上數據等多維度分析報告。
+              </div>
+              <button
+                onClick={handleAnalyze}
+                className="flex items-center gap-2 px-5 py-2.5 rounded text-sm font-semibold"
+                style={{ background: "#f57c00", color: "#fff" }}
+              >
+                <RefreshCw className="w-4 h-4" />
+                開始分析 {symbolBase}
+              </button>
+              <div className="mt-3 text-xs text-[#444]">K 線圖和新聞資訊無需分析即可查看</div>
+            </div>
+          )}
+
+          {/* Analyzing */}
+          {isAnalyzing && !snapshot && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <RefreshCw className="w-8 h-8 text-[#f57c00] animate-spin mb-4" />
+              <div className="text-sm font-medium text-[#ccc] mb-1">正在分析 {symbolBase}...</div>
+              <div className="text-xs text-[#555]">AI 引擎正在計算技術指標、SMC 結構、PA 分析...</div>
+            </div>
+          )}
+
+          {/* Panels */}
+          {(snapshot || activeTab === "news" || activeTab === "settings" || activeTab === "history" || activeTab === "highwinrate" || activeTab === "screener" || activeTab === "heatmap" || activeTab === "alerts" || activeTab === "vpvr") && (
+            <>
+              <Suspense fallback={<div className="flex items-center justify-center h-40 text-muted-foreground text-sm">載入中...</div>}>
+              {activeTab === "screener"    && <ScreenerPanel onSelectSymbol={(sym) => { setSymbol(sym); setSnapshot(null); setActiveTab("indicators"); }} />}
+              {activeTab === "vpvr"        && <VolumeProfilePanel symbol={symbol} />}
+              {activeTab === "heatmap"     && <HeatmapPanel onSelectSymbol={(sym) => { setSymbol(sym); setSnapshot(null); setActiveTab("indicators"); }} />}
+              {activeTab === "alerts"      && <AlertsPanel />}
+              {activeTab === "indicators" && <IndicatorsPanel snap={snapshot} isAnalyzing={isAnalyzing} />}
+              {activeTab === "smc"         && <SmcPanel smc={snapshot?.smc} isLoading={isAnalyzing} currentPrice={displayPrice} />}
+              {activeTab === "smc_ultimate" && <SmcUltimatePanel advanced={snapshot?.advanced as never} isLoading={isAnalyzing} />}
+              {activeTab === "pa"          && <PaPanel pa={snapshot?.pa} isLoading={isAnalyzing} />}
+              {activeTab === "pa_level"    && <PaLevelPanel advanced={snapshot?.advanced as never} isLoading={isAnalyzing} />}
+              {activeTab === "divergence"  && <DivergencePanel advanced={snapshot?.advanced as never} isLoading={isAnalyzing} />}
+              {activeTab === "chan"         && <ChanPanel chanMtf={chanMtfData} chan={chanData} timeframe="4h" isLoading={isAnalyzing} />}
+              {activeTab === "chan_enhanced" && <ChanEnhancedPanel advanced={snapshot?.advanced as never} isLoading={isAnalyzing} />}
+              {activeTab === "strategy"   && <StrategyPanel strategy={snapshot?.strategy} symbol={symbol} isLoading={isAnalyzing} />}
+              {activeTab === "forecast"   && <ForecastPanel forecast={snapshot?.forecast_4h} isLoading={isAnalyzing} />}
+              {activeTab === "onchain"    && <OnchainPanel onchain={snapshot?.onchain ?? null} isLoading={isAnalyzing} />}
+              {activeTab === "news" && (
+                <div className="space-y-3">
+                  {/* Sub-tab switcher */}
+                  <div className="flex rounded overflow-hidden border border-[#2a2a2a]">
+                    <button
+                      onClick={() => setNewsSubTab("news")}
+                      className={`flex-1 text-xs py-2 transition-colors ${
+                        newsSubTab === "news"
+                          ? "bg-[#1e1e1e] text-foreground font-medium"
+                          : "bg-[#111] text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      📰 最新新聞
+                    </button>
+                    <button
+                      onClick={() => setNewsSubTab("tweets")}
+                      className={`flex-1 text-xs py-2 transition-colors border-l border-[#2a2a2a] ${
+                        newsSubTab === "tweets"
+                          ? "bg-[#1e1e1e] text-foreground font-medium"
+                          : "bg-[#111] text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      🐦 Twitter 動態
+                    </button>
+                  </div>
+                  {newsSubTab === "news"   && <NewsPanel symbol={symbol} />}
+                  {newsSubTab === "tweets" && <TweetPanel symbol={symbol} />}
+                </div>
+              )}
+              {activeTab === "highwinrate" && <HighWinRatePanel symbol={symbol} />}
+              {activeTab === "history"    && (
+                <BacktestPanel symbol={symbol} />
+              )}
+              {activeTab === "settings"   && (
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-[#ccc]">⚙️ 設定</div>
+                  <div className="rounded p-4" style={{ background: "#161616", border: "1px solid #2a2a2a" }}>
+                    <div className="text-xs text-[#888] mb-3">指標卡片管理</div>
+                    <button
+                      onClick={() => setShowWidgetMgr(true)}
+                      className="px-4 py-2 rounded text-xs text-[#ccc] border border-[#2a2a2a] hover:border-[#444] transition-colors"
+                    >
+                      管理顯示卡片
+                    </button>
+                  </div>
+                </div>
+              )}
+              </Suspense>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ══ STATUS BAR ══ */}
+      <div className="flex items-center justify-between px-4 py-1.5 border-t text-[10px]" style={{ background: "#0f0f0f", borderColor: "#1e1e1e" }}>
+        <div className="flex items-center gap-2 text-[#555]">
+          <span>系統狀態</span>
+          <span className="text-[#4caf50]">●</span>
+          <span className="text-[#4caf50]">WebSocket 連接{isLive ? "正常" : "斷開"}</span>
+        </div>
+        {lastUpdated && (
+          <div className="text-[#555]">最後分析：{lastUpdated.toLocaleTimeString("zh-TW")}</div>
+        )}
+      </div>
+
+      {/* Widget Manager Modal */}
+      {showWidgetMgr && (
+        <WidgetManager
+          currentIds={widgetIds}
+          onSave={handleWidgetSave}
+          onClose={() => setShowWidgetMgr(false)}
+        />
+      )}
+    </div>
+  );
+}

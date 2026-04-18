@@ -1,0 +1,534 @@
+{
+  "timestamp": "2026-04-18T08:50:53.134Z",
+  "source": "binance_futures",
+  "reports": [
+    {
+      "symbol": "BTCUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 424,
+      "strict": {
+        "total": 71,
+        "wins": 42,
+        "wr": 59.154929577464785,
+        "pf": 1.3802294197031038,
+        "ret": 0.11270000000000004,
+        "dpt": 5.140258215962441
+      },
+      "balanced": {
+        "total": 103,
+        "S": 77,
+        "Sw": 46,
+        "A": 26,
+        "Aw": 12,
+        "wins": 58,
+        "wr": 56.310679611650485,
+        "sWr": 59.74025974025974,
+        "aWr": 46.15384615384615,
+        "pf": 1.1892631578947368,
+        "ret": 0.0899,
+        "dpt": 3.5432847896440127,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 29,
+            "wins": 19,
+            "S": 22,
+            "Sw": 15,
+            "A": 7,
+            "Aw": 4
+          },
+          "hwr_b_guarded": {
+            "trades": 26,
+            "wins": 15,
+            "S": 17,
+            "Sw": 10,
+            "A": 9,
+            "Aw": 5
+          },
+          "cannonball_guarded": {
+            "trades": 48,
+            "wins": 24,
+            "S": 38,
+            "Sw": 21,
+            "A": 10,
+            "Aw": 3
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C4_volume": 5,
+          "C6_candle_form": 15,
+          "C8_atr_health": 14,
+          "C5_overextended": 5,
+          "PA2_rsi_extreme": 4,
+          "C1_session": 5,
+          "C3_rsi": 4,
+          "C7_momentum": 6,
+          "C2_htf_trend": 1
+        },
+        "avg_core_pass_win": 7.068965517241379,
+        "avg_core_pass_loss": 6.777777777777778
+      }
+    },
+    {
+      "symbol": "ETHUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 440,
+      "strict": {
+        "total": 55,
+        "wins": 23,
+        "wr": 41.81818181818181,
+        "pf": 0.8731443994601888,
+        "ret": -0.07519999999999999,
+        "dpt": 6.63560606060606
+      },
+      "balanced": {
+        "total": 107,
+        "S": 64,
+        "Sw": 29,
+        "A": 43,
+        "Aw": 24,
+        "wins": 53,
+        "wr": 49.532710280373834,
+        "sWr": 45.3125,
+        "aWr": 55.81395348837209,
+        "pf": 1.105903359000111,
+        "ret": 0.0948999999999999,
+        "dpt": 3.410825545171339,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 29,
+            "wins": 22,
+            "S": 17,
+            "Sw": 11,
+            "A": 12,
+            "Aw": 11
+          },
+          "hwr_b_guarded": {
+            "trades": 25,
+            "wins": 8,
+            "S": 11,
+            "Sw": 3,
+            "A": 14,
+            "Aw": 5
+          },
+          "cannonball_guarded": {
+            "trades": 53,
+            "wins": 23,
+            "S": 36,
+            "Sw": 15,
+            "A": 17,
+            "Aw": 8
+          }
+        },
+        "fail_reasons_for_losses": {
+          "PA2_rsi_extreme": 3,
+          "C6_candle_form": 16,
+          "C8_atr_health": 12,
+          "C5_overextended": 1,
+          "C4_volume": 7,
+          "C1_session": 8,
+          "C7_momentum": 10,
+          "C3_rsi": 9,
+          "C2_htf_trend": 2
+        },
+        "avg_core_pass_win": 6.679245283018868,
+        "avg_core_pass_loss": 6.796296296296297
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 416,
+      "strict": {
+        "total": 66,
+        "wins": 41,
+        "wr": 62.121212121212125,
+        "pf": 1.6701181038666884,
+        "ret": 0.4142,
+        "dpt": 5.529671717171717
+      },
+      "balanced": {
+        "total": 96,
+        "S": 75,
+        "Sw": 48,
+        "A": 21,
+        "Aw": 8,
+        "wins": 56,
+        "wr": 58.333333333333336,
+        "sWr": 64,
+        "aWr": 38.095238095238095,
+        "pf": 1.3831755822609808,
+        "ret": 0.3603,
+        "dpt": 3.8016493055555554,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 31,
+            "wins": 24,
+            "S": 25,
+            "Sw": 19,
+            "A": 6,
+            "Aw": 5
+          },
+          "hwr_b_guarded": {
+            "trades": 10,
+            "wins": 5,
+            "S": 7,
+            "Sw": 5,
+            "A": 3,
+            "Aw": 0
+          },
+          "cannonball_guarded": {
+            "trades": 55,
+            "wins": 27,
+            "S": 43,
+            "Sw": 24,
+            "A": 12,
+            "Aw": 3
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C8_atr_health": 12,
+          "C6_candle_form": 12,
+          "C5_overextended": 3,
+          "PA2_rsi_extreme": 2,
+          "C3_rsi": 8,
+          "C1_session": 3,
+          "C7_momentum": 5,
+          "C4_volume": 4,
+          "C2_htf_trend": 3
+        },
+        "avg_core_pass_win": 7.071428571428571,
+        "avg_core_pass_loss": 6.75
+      }
+    },
+    {
+      "symbol": "BNBUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 419,
+      "strict": {
+        "total": 54,
+        "wins": 29,
+        "wr": 53.70370370370371,
+        "pf": 1.0157057243232073,
+        "ret": 0.007600000000000022,
+        "dpt": 6.758487654320987
+      },
+      "balanced": {
+        "total": 74,
+        "S": 58,
+        "Sw": 33,
+        "A": 16,
+        "Aw": 5,
+        "wins": 38,
+        "wr": 51.35135135135135,
+        "sWr": 56.896551724137936,
+        "aWr": 31.25,
+        "pf": 0.9121794871794873,
+        "ret": -0.0548,
+        "dpt": 4.931869369369369,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 16,
+            "wins": 10,
+            "S": 11,
+            "Sw": 7,
+            "A": 5,
+            "Aw": 3
+          },
+          "hwr_b_guarded": {
+            "trades": 17,
+            "wins": 12,
+            "S": 14,
+            "Sw": 10,
+            "A": 3,
+            "Aw": 2
+          },
+          "cannonball_guarded": {
+            "trades": 41,
+            "wins": 16,
+            "S": 33,
+            "Sw": 16,
+            "A": 8,
+            "Aw": 0
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C8_atr_health": 11,
+          "C5_overextended": 2,
+          "C3_rsi": 3,
+          "PA2_rsi_extreme": 1,
+          "C6_candle_form": 10,
+          "C4_volume": 5,
+          "C1_session": 4,
+          "C7_momentum": 6
+        },
+        "avg_core_pass_win": 7.078947368421052,
+        "avg_core_pass_loss": 6.861111111111111
+      }
+    },
+    {
+      "symbol": "XRPUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 381,
+      "strict": {
+        "total": 67,
+        "wins": 39,
+        "wr": 58.2089552238806,
+        "pf": 1.2317098445595855,
+        "ret": 0.11179999999999998,
+        "dpt": 5.447139303482587
+      },
+      "balanced": {
+        "total": 102,
+        "S": 76,
+        "Sw": 46,
+        "A": 26,
+        "Aw": 10,
+        "wins": 56,
+        "wr": 54.90196078431373,
+        "sWr": 60.526315789473685,
+        "aWr": 38.46153846153847,
+        "pf": 1.03444929645803,
+        "ret": 0.02839999999999998,
+        "dpt": 3.5780228758169934,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 29,
+            "wins": 20,
+            "S": 22,
+            "Sw": 16,
+            "A": 7,
+            "Aw": 4
+          },
+          "hwr_b_guarded": {
+            "trades": 11,
+            "wins": 4,
+            "S": 7,
+            "Sw": 4,
+            "A": 4,
+            "Aw": 0
+          },
+          "cannonball_guarded": {
+            "trades": 62,
+            "wins": 32,
+            "S": 47,
+            "Sw": 26,
+            "A": 15,
+            "Aw": 6
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C1_session": 7,
+          "C3_rsi": 8,
+          "PA2_rsi_extreme": 4,
+          "C6_candle_form": 10,
+          "C8_atr_health": 7,
+          "C5_overextended": 3,
+          "C7_momentum": 12,
+          "C2_htf_trend": 4,
+          "C4_volume": 5
+        },
+        "avg_core_pass_win": 7,
+        "avg_core_pass_loss": 6.782608695652174
+      }
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 280,
+      "strict": {
+        "total": 53,
+        "wins": 25,
+        "wr": 47.16981132075472,
+        "pf": 0.949408284023669,
+        "ret": -0.03420000000000001,
+        "dpt": 6.886006289308176
+      },
+      "balanced": {
+        "total": 88,
+        "S": 58,
+        "Sw": 29,
+        "A": 30,
+        "Aw": 11,
+        "wins": 40,
+        "wr": 45.45454545454545,
+        "sWr": 50,
+        "aWr": 36.666666666666664,
+        "pf": 0.8544420277731302,
+        "ret": -0.17400000000000007,
+        "dpt": 4.147253787878788,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 11,
+            "wins": 9,
+            "S": 7,
+            "Sw": 5,
+            "A": 4,
+            "Aw": 4
+          },
+          "hwr_b_guarded": {
+            "trades": 15,
+            "wins": 6,
+            "S": 9,
+            "Sw": 4,
+            "A": 6,
+            "Aw": 2
+          },
+          "cannonball_guarded": {
+            "trades": 62,
+            "wins": 25,
+            "S": 42,
+            "Sw": 20,
+            "A": 20,
+            "Aw": 5
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C5_overextended": 3,
+          "PA2_rsi_extreme": 1,
+          "C4_volume": 3,
+          "C7_momentum": 10,
+          "C8_atr_health": 13,
+          "C3_rsi": 8,
+          "C6_candle_form": 10,
+          "C1_session": 11,
+          "C2_htf_trend": 3
+        },
+        "avg_core_pass_win": 6.925,
+        "avg_core_pass_loss": 6.729166666666667
+      }
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 442,
+      "strict": {
+        "total": 76,
+        "wins": 40,
+        "wr": 52.63157894736842,
+        "pf": 0.8859298712827338,
+        "ret": -0.10279999999999995,
+        "dpt": 4.802083333333333
+      },
+      "balanced": {
+        "total": 117,
+        "S": 84,
+        "Sw": 45,
+        "A": 33,
+        "Aw": 20,
+        "wins": 65,
+        "wr": 55.55555555555556,
+        "sWr": 53.57142857142857,
+        "aWr": 60.60606060606061,
+        "pf": 1.0724205570812082,
+        "ret": 0.09230000000000017,
+        "dpt": 3.119301994301994,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 26,
+            "wins": 21,
+            "S": 20,
+            "Sw": 16,
+            "A": 6,
+            "Aw": 5
+          },
+          "hwr_b_guarded": {
+            "trades": 14,
+            "wins": 7,
+            "S": 10,
+            "Sw": 5,
+            "A": 4,
+            "Aw": 2
+          },
+          "cannonball_guarded": {
+            "trades": 77,
+            "wins": 37,
+            "S": 54,
+            "Sw": 24,
+            "A": 23,
+            "Aw": 13
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C1_session": 8,
+          "C6_candle_form": 13,
+          "PA2_rsi_extreme": 4,
+          "C8_atr_health": 12,
+          "C5_overextended": 2,
+          "C3_rsi": 3,
+          "C7_momentum": 9,
+          "C4_volume": 6,
+          "C2_htf_trend": 4
+        },
+        "avg_core_pass_win": 6.892307692307693,
+        "avg_core_pass_loss": 6.903846153846154
+      }
+    },
+    {
+      "symbol": "LINKUSDT",
+      "days": 364.9583333333333,
+      "raw_signals": 470,
+      "strict": {
+        "total": 58,
+        "wins": 27,
+        "wr": 46.55172413793103,
+        "pf": 0.8264752791068584,
+        "ret": -0.10880000000000004,
+        "dpt": 6.292385057471264
+      },
+      "balanced": {
+        "total": 110,
+        "S": 78,
+        "Sw": 39,
+        "A": 32,
+        "Aw": 12,
+        "wins": 51,
+        "wr": 46.36363636363636,
+        "sWr": 50,
+        "aWr": 37.5,
+        "pf": 0.7953928488326996,
+        "ret": -0.2638000000000001,
+        "dpt": 3.31780303030303,
+        "by_strategy": {
+          "pa_v4_focus": {
+            "trades": 39,
+            "wins": 23,
+            "S": 34,
+            "Sw": 21,
+            "A": 5,
+            "Aw": 2
+          },
+          "hwr_b_guarded": {
+            "trades": 9,
+            "wins": 3,
+            "S": 7,
+            "Sw": 3,
+            "A": 2,
+            "Aw": 0
+          },
+          "cannonball_guarded": {
+            "trades": 62,
+            "wins": 25,
+            "S": 37,
+            "Sw": 15,
+            "A": 25,
+            "Aw": 10
+          }
+        },
+        "fail_reasons_for_losses": {
+          "C6_candle_form": 18,
+          "PA2_rsi_extreme": 8,
+          "C5_overextended": 4,
+          "C2_htf_trend": 3,
+          "PA3_4h_rsi": 1,
+          "C4_volume": 4,
+          "C1_session": 9,
+          "C3_rsi": 8,
+          "C7_momentum": 7,
+          "C8_atr_health": 18
+        },
+        "avg_core_pass_win": 6.901960784313726,
+        "avg_core_pass_loss": 6.796610169491525
+      }
+    }
+  ]
+}
