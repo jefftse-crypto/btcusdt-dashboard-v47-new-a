@@ -1587,7 +1587,7 @@ export default function Dashboard() {
               <ChevronDown className={`w-3.5 h-3.5 text-[#888] transition-transform ${showSymbolSearch ? "rotate-180" : ""}`} />
             </button>
             {showSymbolSearch && (
-              <div className="absolute top-full left-0 mt-2 z-50 overflow-hidden rounded-2xl shadow-2xl" style={{ background: "#141414", border: "1px solid #2a2a2a", minWidth: 260, maxWidth: 320 }}>
+              <div className="absolute top-full left-0 mt-2 z-[9999] overflow-hidden rounded-2xl shadow-2xl" style={{ background: "#141414", border: "1px solid #2a2a2a", minWidth: 260, maxWidth: 320 }}>
                 <div className="p-3 border-b" style={{ borderColor: "#222" }}>
                   <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "#0d0d0d", border: "1px solid #2a2a2a" }}>
                     <Search className="w-4 h-4 text-[#555]" />
@@ -2874,7 +2874,7 @@ export default function Dashboard() {
       )}
 
       {/* 點擊外部關閉幣種搜索 */}
-      {showSymbolSearch && <div className="fixed inset-0 z-40" onClick={() => setShowSymbolSearch(false)} />}
+      {showSymbolSearch && <div className="fixed inset-0 z-[9998]" onClick={() => setShowSymbolSearch(false)} />}
     </div>
   );
 }
