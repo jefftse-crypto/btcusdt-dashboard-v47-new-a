@@ -658,16 +658,26 @@ export interface HwrScanResult {
 }
 
 export const SUPPORTED_SYMBOLS = [
-  { value: "BTCUSDT", label: "BTC/USDT", icon: "₿" },
-  { value: "ETHUSDT", label: "ETH/USDT", icon: "Ξ" },
-  { value: "SOLUSDT", label: "SOL/USDT", icon: "◎" },
-  { value: "BNBUSDT", label: "BNB/USDT", icon: "B" },
-  { value: "XRPUSDT", label: "XRP/USDT", icon: "✕" },
-  { value: "ADAUSDT", label: "ADA/USDT", icon: "₳" },
+  { value: "BTCUSDT",  label: "BTC/USDT",  icon: "₿" },
+  { value: "ETHUSDT",  label: "ETH/USDT",  icon: "Ξ" },
+  { value: "BNBUSDT",  label: "BNB/USDT",  icon: "B" },
+  { value: "SOLUSDT",  label: "SOL/USDT",  icon: "◎" },
+  { value: "XRPUSDT",  label: "XRP/USDT",  icon: "✕" },
   { value: "DOGEUSDT", label: "DOGE/USDT", icon: "Ð" },
+  { value: "ADAUSDT",  label: "ADA/USDT",  icon: "₳" },
+  { value: "TRXUSDT",  label: "TRX/USDT",  icon: "T" },
   { value: "AVAXUSDT", label: "AVAX/USDT", icon: "A" },
-  { value: "DOTUSDT", label: "DOT/USDT", icon: "●" },
   { value: "LINKUSDT", label: "LINK/USDT", icon: "⬡" },
+  { value: "DOTUSDT",  label: "DOT/USDT",  icon: "●" },
+  { value: "SUIUSDT",  label: "SUI/USDT",  icon: "S" },
+  { value: "NEARUSDT", label: "NEAR/USDT", icon: "N" },
+  { value: "WLDUSDT",  label: "WLD/USDT",  icon: "W" },
+  { value: "AAVEUSDT", label: "AAVE/USDT", icon: "A" },
+  { value: "ENAUSDT",  label: "ENA/USDT",  icon: "E" },
+  { value: "ZECUSDT",  label: "ZEC/USDT",  icon: "Z" },
+  { value: "UNIUSDT",  label: "UNI/USDT",  icon: "🦄" },
+  { value: "LTCUSDT",  label: "LTC/USDT",  icon: "Ł" },
+  { value: "ATOMUSDT", label: "ATOM/USDT", icon: "⚛" },
 ];
 
 export const DEFAULT_WIDGET_IDS = [

@@ -1,1 +1,0 @@
-import{c as e}from"./index-CZfSHePT.js";const c=e("ChevronRight",[["path",{d:"m9 18 6-6-6-6",key:"mthhwq"}]]);const h=e("CircleCheckBig",[["path",{d:"M21.801 10A10 10 0 1 1 17 3.335",key:"yps3ct"}],["path",{d:"m9 11 3 3L22 4",key:"1pflzl"}]]);export{c as C,h as a};

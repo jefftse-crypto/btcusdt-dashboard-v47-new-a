@@ -1565,7 +1565,7 @@ export default function Dashboard() {
   // Render
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a", color: "#e0e0e0" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#0a0a0a", color: "#e0e0e0", paddingBottom: isMobile ? "72px" : "0" }}>
 
       {/* ══ TOP NAV ══ */}
       <header className="sticky top-0 z-40 border-b" style={{ background: "#111", borderColor: "#1e1e1e" }}>
@@ -1576,11 +1576,42 @@ export default function Dashboard() {
             <span className="text-sm font-bold tracking-wide text-[#ffd740] hidden sm:block">CRYPTO ANALYST</span>
           </div>
 
-          {/* 幣種顯示（鎖定 BTC） */}
-          <div className="flex items-center gap-2 rounded border border-[#ffd74040] bg-[#1a1a1a] px-3 py-2 text-sm font-semibold sm:py-1" title="目前僅支援 BTCUSDT">
-            <span>₿</span>
-            <span className="text-[#ffd740]">BTCUSDT</span>
-            <span className="text-[9px] text-[#555] ml-1 border border-[#2a2a2a] rounded px-1">LOCKED</span>
+          {/* 幣種選擇器（前 20 大幣種）*/}
+          <div className="relative order-1 w-full sm:order-none sm:w-auto">
+            <button onClick={() => setShowSymbolSearch(!showSymbolSearch)}
+              className="flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-semibold text-white transition-all active:scale-95 sm:w-auto sm:justify-start sm:py-1.5"
+              style={{ background: showSymbolSearch ? "#1e1e1e" : "#161616", borderColor: showSymbolSearch ? "#ffd740" : "#2a2a2a" }}>
+              <span className="text-base">{symbolInfo?.icon ?? "₿"}</span>
+              <span className="text-[#ffd740] font-bold">{symbol.replace("USDT", "")}</span>
+              <span className="text-[10px] text-[#666]">/USDT</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-[#888] transition-transform ${showSymbolSearch ? "rotate-180" : ""}`} />
+            </button>
+            {showSymbolSearch && (
+              <div className="absolute top-full left-0 mt-2 z-50 overflow-hidden rounded-2xl shadow-2xl" style={{ background: "#141414", border: "1px solid #2a2a2a", minWidth: 260, maxWidth: 320 }}>
+                <div className="p-3 border-b" style={{ borderColor: "#222" }}>
+                  <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "#0d0d0d", border: "1px solid #2a2a2a" }}>
+                    <Search className="w-4 h-4 text-[#555]" />
+                    <input value={symbolInput} onChange={e => setSymbolInput(e.target.value)}
+                      placeholder="搜尋幣種..." className="flex-1 text-sm bg-transparent text-[#ccc] focus:outline-none" autoFocus />
+                    {symbolInput && <button onClick={() => setSymbolInput("")} className="text-[#555] hover:text-[#888]"><XCircle className="w-4 h-4" /></button>}
+                  </div>
+                </div>
+                <div className="max-h-64 overflow-y-auto py-1">
+                  {filteredSymbols.map(s => (
+                    <button key={s.value} onClick={() => { setSymbol(s.value); setSnapshot(null); setShowSymbolSearch(false); setSymbolInput(""); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-all active:scale-[0.98]"
+                      style={{ background: s.value === symbol ? "rgba(255,215,64,0.08)" : "transparent", color: s.value === symbol ? "#ffd740" : "#ccc", borderLeft: s.value === symbol ? "3px solid #ffd740" : "3px solid transparent" }}>
+                      <span className="text-lg w-6 text-center">{s.icon}</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-semibold">{s.value.replace("USDT", "")}</span>
+                        <span className="text-[10px] text-[#555]">{s.label}</span>
+                      </div>
+                      {s.value === symbol && <CheckCircle className="w-4 h-4 ml-auto text-[#ffd740]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Live Price */}
@@ -1617,14 +1648,15 @@ export default function Dashboard() {
 
           {/* Analyze Button */}
           <button onClick={handleAnalyze} disabled={isAnalyzing}
-            className="order-last flex w-full items-center justify-center gap-1.5 rounded px-3 py-2 text-xs font-semibold transition-all disabled:opacity-60 sm:order-none sm:w-auto sm:py-1.5"
-            style={{ background: isAnalyzing ? "#1a1a1a" : "#ffd740", color: isAnalyzing ? "#888" : "#000", border: isAnalyzing ? "1px solid #2a2a2a" : "none" }}>
-            <RefreshCw className={`w-3.5 h-3.5 ${isAnalyzing ? "animate-spin" : ""}`} />
+            className="order-last flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all active:scale-95 disabled:opacity-60 sm:order-none sm:w-auto sm:py-2"
+            style={{ background: isAnalyzing ? "#1a1a1a" : "linear-gradient(135deg, #ffd740 0%, #ffb300 100%)", color: isAnalyzing ? "#888" : "#000", border: isAnalyzing ? "1px solid #2a2a2a" : "none", boxShadow: isAnalyzing ? "none" : "0 2px 12px rgba(255,215,64,0.3)" }}>
+            <RefreshCw className={`w-4 h-4 ${isAnalyzing ? "animate-spin" : ""}`} />
             {isAnalyzing ? "分析中..." : `分析 ${symbolBase}`}
           </button>
         </div>
 
-        {/* 改良 1-1：兩層導航 - 第一層（主分類）*/}
+        {/* 改良 1-1：兩層導航 - 第一層（主分類）—桐面階層導航，手機用底部導航欄代替 */}
+        {!isMobile && (
         <div className="border-t" style={{ borderColor: "#1e1e1e", background: "#0d0d0d" }}>
           <div className="flex items-center overflow-x-auto">
             {visibleNavCategories.map(cat => (
@@ -1636,40 +1668,12 @@ export default function Dashboard() {
                   background: activeCategory === cat.id ? "#111" : "transparent",
                 }}>
                 <span>{cat.icon}</span>
-                <span className={isMobile ? "" : "hidden sm:block"}>{isMobile ? getCompactTabLabel(cat.id, cat.label) : cat.label}</span>
+                <span className="hidden sm:block">{cat.label}</span>
               </button>
             ))}
-            {isMobile && (
-              <button
-                onClick={() => setShowMobileCategoryMenu(v => !v)}
-                className="ml-auto flex items-center gap-1 border-b-2 px-4 py-2 text-xs font-medium"
-                style={{ color: showMobileCategoryMenu ? "#ffd740" : "#888", borderBottomColor: showMobileCategoryMenu ? "#ffd740" : "transparent" }}
-              >
-                <span>更多</span>
-                {showMobileCategoryMenu ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              </button>
-            )}
           </div>
-          {isMobile && showMobileCategoryMenu && (
-            <div className="grid grid-cols-2 gap-2 border-t px-3 py-2" style={{ borderColor: "#1e1e1e", background: "#101010" }}>
-              {secondaryMobileCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-[11px]"
-                  style={{
-                    borderColor: activeCategory === cat.id ? "#ffd740" : "#2a2a2a",
-                    color: activeCategory === cat.id ? "#ffd740" : "#aaa",
-                    background: activeCategory === cat.id ? "rgba(255,215,64,0.12)" : "#161616",
-                  }}
-                >
-                  <span>{cat.icon}</span>
-                  <span className="truncate">{cat.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
+        )}
       </header>
 
       {/* ══ 改良 1-4：概覽橫幅重設計 ══ */}
@@ -2308,22 +2312,27 @@ export default function Dashboard() {
 
       {/* ══ 改良 1-1：兩層導航 - 第二層（子 Tab）══ */}
       <div className="border-b z-30 md:sticky md:top-[88px]" style={{ background: "#0f0f0f", borderColor: "#1e1e1e" }}>
-        <div className="flex items-center gap-2 overflow-x-auto px-2 py-2 scrollbar-thin snap-x snap-mandatory sm:gap-0 sm:px-0 sm:py-0">
+        <div className={`flex items-center overflow-x-auto scrollbar-thin snap-x snap-mandatory ${isMobile ? "gap-2 px-3 py-2.5" : "gap-0 px-0 py-0"}`}>
           {visibleCategoryTabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className="snap-start shrink-0 whitespace-nowrap rounded-full border px-3 py-2 text-[11px] font-semibold transition-colors sm:flex sm:items-center sm:gap-1.5 sm:rounded-none sm:border-0 sm:px-4 sm:py-2.5 sm:text-xs sm:font-medium"
+                className={`snap-start shrink-0 whitespace-nowrap transition-all active:scale-95 ${
+                  isMobile
+                    ? "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold"
+                    : "flex items-center gap-1.5 rounded-none border-0 px-4 py-2.5 text-xs font-medium border-b-2"
+                }`}
                 style={{
                   color: isActive ? "#ffd740" : "#8a8a8a",
                   borderColor: isMobile ? (isActive ? "#ffd740" : "#2a2a2a") : "transparent",
                   borderBottomColor: !isMobile ? (isActive ? "#ffd740" : "transparent") : undefined,
-                  background: isMobile ? (isActive ? "rgba(255,215,64,0.12)" : "#151515") : (isActive ? "#111" : "transparent"),
-                  boxShadow: isMobile && isActive ? "inset 0 0 0 1px rgba(255,215,64,0.15)" : "none",
+                  background: isMobile ? (isActive ? "rgba(255,215,64,0.15)" : "#161616") : (isActive ? "#111" : "transparent"),
+                  boxShadow: isMobile && isActive ? "0 0 0 1px rgba(255,215,64,0.2)" : "none",
                 }}
               >
+                {isMobile && <span>{tab.icon}</span>}
                 {!isMobile && <span>{tab.icon}</span>}
                 <span>{getCompactTabLabel(tab.id, tab.label)}</span>
               </button>
@@ -2332,26 +2341,26 @@ export default function Dashboard() {
           {isMobile && secondaryMobileTabs.length > 0 && (
             <button
               onClick={() => setShowMobileTabMenu(v => !v)}
-              className="snap-start shrink-0 whitespace-nowrap rounded-full border px-3 py-2 text-[11px] font-semibold transition-colors"
+              className="snap-start shrink-0 whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-all active:scale-95"
               style={{
                 color: showMobileTabMenu ? "#ffd740" : "#8a8a8a",
                 borderColor: showMobileTabMenu ? "#ffd740" : "#2a2a2a",
-                background: showMobileTabMenu ? "rgba(255,215,64,0.12)" : "#151515",
+                background: showMobileTabMenu ? "rgba(255,215,64,0.15)" : "#161616",
               }}
             >
-              {showMobileTabMenu ? "收起更多" : "更多功能"}
+              {showMobileTabMenu ? "✕ 收起" : "更多 ›"}
             </button>
           )}
         </div>
         {isMobile && showMobileTabMenu && secondaryMobileTabs.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 border-t px-3 py-2" style={{ borderColor: "#1e1e1e", background: "#101010" }}>
+          <div className="grid grid-cols-3 gap-2 border-t px-3 py-3" style={{ borderColor: "#1e1e1e", background: "#0d0d0d" }}>
             {secondaryMobileTabs.map(tab => {
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-[11px]"
+                  onClick={() => { handleTabChange(tab.id); setShowMobileTabMenu(false); }}
+                  className="flex flex-col items-center gap-1 rounded-xl border px-2 py-3 text-center text-[11px] transition-all active:scale-95"
                   style={{
                     borderColor: isActive ? "#ffd740" : "#2a2a2a",
                     color: isActive ? "#ffd740" : "#aaa",
@@ -2371,11 +2380,16 @@ export default function Dashboard() {
       <div className="flex-1">
         <div className="p-3 sm:p-4">
           {!snapshot && !isAnalyzing && !NO_SNAPSHOT_TABS.has(activeTab) && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Zap className="w-12 h-12 text-[#ffd740] mb-4 opacity-50" />
-              <div className="text-[#888] text-sm mb-2">尚未執行分析</div>
-              <div className="text-[#555] text-xs mb-4">點擊右上角「分析 {symbolBase}」按鈕開始</div>
-              <button onClick={handleAnalyze} className="px-6 py-2.5 rounded text-sm font-semibold" style={{ background: "#ffd740", color: "#000" }}>
+            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+              <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5" style={{ background: "linear-gradient(135deg, rgba(255,215,64,0.15) 0%, rgba(255,179,0,0.08) 100%)", border: "1px solid rgba(255,215,64,0.2)" }}>
+                <Zap className="w-10 h-10 text-[#ffd740]" />
+              </div>
+              <div className="text-white text-lg font-bold mb-2">開始分析 {symbolBase}</div>
+              <div className="text-[#666] text-sm mb-6 max-w-xs">點擊下方按鈕即可獲取即時技術分析、策略建議與領訊情報</div>
+              <button onClick={handleAnalyze} disabled={isAnalyzing}
+                className="flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-bold transition-all active:scale-95 disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, #ffd740 0%, #ffb300 100%)", color: "#000", boxShadow: "0 4px 20px rgba(255,215,64,0.35)" }}>
+                <RefreshCw className="w-5 h-5" />
                 立即分析 {symbolBase}
               </button>
             </div>
@@ -2824,6 +2838,35 @@ export default function Dashboard() {
           </div>
         );
       })()}
+
+      {/* 手機 App 底部導航欄 */}
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t" style={{ background: "#111", borderColor: "#1e1e1e", paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div className="flex items-stretch h-16">
+            {[
+              { id: "technical", icon: "📈", label: "技術" },
+              { id: "strategy",  icon: "💡", label: "策略" },
+              { id: "overview",  icon: "🔍", label: "總覽" },
+              { id: "intel",     icon: "⛓️", label: "領訊" },
+              { id: "settings",  icon: "⚙️", label: "設定" },
+            ].map(item => {
+              const isActive = activeCategory === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleCategoryChange(item.id)}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95"
+                  style={{ color: isActive ? "#ffd740" : "#555" }}
+                >
+                  <span className="text-xl leading-none">{item.icon}</span>
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                  {isActive && <span className="absolute bottom-0 w-8 h-0.5 rounded-full" style={{ background: "#ffd740" }} />}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* Widget Manager Modal */}
       {showWidgetMgr && (
