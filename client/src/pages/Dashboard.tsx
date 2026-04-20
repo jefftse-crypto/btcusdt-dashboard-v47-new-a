@@ -1576,35 +1576,11 @@ export default function Dashboard() {
             <span className="text-sm font-bold tracking-wide text-[#ffd740] hidden sm:block">CRYPTO ANALYST</span>
           </div>
 
-          {/* 改良 2-2：動態幣種搜索 */}
-          <div className="relative order-1 w-full sm:order-none sm:w-auto">
-            <button onClick={() => setShowSymbolSearch(!showSymbolSearch)}
-              className="flex w-full items-center justify-between gap-2 rounded border border-[#2a2a2a] bg-[#1a1a1a] px-3 py-2 text-sm font-semibold text-white transition-colors hover:border-[#ffd740] sm:w-auto sm:justify-start sm:py-1">
-              <span>{symbolInfo?.icon ?? "₿"}</span>
-              <span>{symbol}</span>
-              <ChevronDown className="w-3 h-3 text-[#888]" />
-            </button>
-            {showSymbolSearch && (
-              <div className="absolute top-full left-0 mt-1 z-50 w-full overflow-hidden rounded-lg shadow-xl sm:w-auto" style={{ background: "#161616", border: "1px solid #2a2a2a", minWidth: 200 }}>
-                <div className="p-2 border-b" style={{ borderColor: "#2a2a2a" }}>
-                  <div className="flex items-center gap-2 rounded px-2 py-1" style={{ background: "#0d0d0d", border: "1px solid #2a2a2a" }}>
-                    <Search className="w-3 h-3 text-[#555]" />
-                    <input value={symbolInput} onChange={e => setSymbolInput(e.target.value)}
-                      placeholder="搜索幣種..." className="flex-1 text-xs bg-transparent text-[#ccc] focus:outline-none" autoFocus />
-                  </div>
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {filteredSymbols.map(s => (
-                    <button key={s.value} onClick={() => { setSymbol(s.value); setSnapshot(null); setShowSymbolSearch(false); setSymbolInput(""); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-[#1e1e1e] transition-colors"
-                      style={{ color: s.value === symbol ? "#ffd740" : "#ccc" }}>
-                      <span className="w-4">{s.icon}</span>
-                      <span className="font-medium">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* 幣種顯示（鎖定 BTC） */}
+          <div className="flex items-center gap-2 rounded border border-[#ffd74040] bg-[#1a1a1a] px-3 py-2 text-sm font-semibold sm:py-1" title="目前僅支援 BTCUSDT">
+            <span>₿</span>
+            <span className="text-[#ffd740]">BTCUSDT</span>
+            <span className="text-[9px] text-[#555] ml-1 border border-[#2a2a2a] rounded px-1">LOCKED</span>
           </div>
 
           {/* Live Price */}

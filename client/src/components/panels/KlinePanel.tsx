@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useIsMobile } from "@/hooks/useMobile";
 import type { Timeframe, CryptoSnapshot } from "@shared/cryptoTypes";
@@ -145,6 +146,23 @@ export function KlinePanel({
   // 高勝率訊號疊加層開關
   const [showHwr, setShowHwr] = useState(true);
   const hwrLineRefs = useRef<ISeriesApi<"Line">[]>([]);  // 高勝率訊號線
+  // ── 全螢幕 ──
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const toggleFullscreen = useCallback(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  }, []);
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const { data: candles, isLoading } = trpc.crypto.getKlines.useQuery(
     { symbol, timeframe, limit: 150 },
@@ -919,7 +937,7 @@ export function KlinePanel({
   }, [snapshot]);
 
   return (
-    <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg overflow-hidden">
+    <div ref={panelRef} className={`bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg overflow-hidden${isFullscreen ? " fixed inset-0 z-[9999] flex flex-col" : ""}`}>
       {/* Header */}
       <div className="flex flex-col gap-1.5 border-b border-[#1e1e1e] px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:py-1.5">
         <div className="flex items-center gap-2 flex-wrap">
@@ -935,6 +953,14 @@ export function KlinePanel({
           )}
         </div>
         <div className="flex items-center justify-between gap-2 sm:justify-end sm:gap-3">
+          {/* 全螢幕按鈕 */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-1 rounded text-[#555] hover:text-[#ffd740] transition-colors"
+            title={isFullscreen ? "退出全螢幕" : "全螢幕"}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
           {/* OHLCV hover info */}
           {!isMobile && hoveredOhlcv ? (
             <div className="flex items-center gap-1.5 text-[10px] font-mono">
@@ -959,13 +985,13 @@ export function KlinePanel({
       </div>
 
       {/* Main chart */}
-      <div className="relative">
+      <div className={`relative${isFullscreen ? " flex-1" : ""}`}>
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d0d]/80 z-10">
             <div className="text-xs text-[#555] animate-pulse">載入 {tfLabel}...</div>
           </div>
         )}
-        <div ref={chartContainerRef} style={{ height }} />
+        <div ref={chartContainerRef} style={{ height: isFullscreen ? "100%" : height, minHeight: isFullscreen ? 0 : undefined }} className={isFullscreen ? "absolute inset-0" : ""} />
       </div>
 
       {/* Volume sub-chart */}
